@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#000000" />
+    <title>Projeto Redenção | Acesso Restrito</title>
+    <style>
+      /* Define o vocabulário visual do terminal governamental e evita rolagem global. */
+      :root {
+        color-scheme: dark;
+        --preto: #000000;
+        --chumbo: #0a0a0a;
+        --verde: #00ff00;
+        --verde-suave: rgba(0, 255, 0, 0.16);
+        --vermelho: #ff3333;
+        --cinza: #8b9a8b;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        min-height: 100%;
+        margin: 0;
+      }
+
+      body {
+        min-height: 100vh;
+        overflow: hidden;
+        background: var(--preto);
+        color: var(--verde);
+        font-family: "Courier New", Courier, Consolas, monospace;
+      }
+
+      /* Centraliza o terminal e cria uma textura discreta sem competir com o formulário. */
+      .tela-acesso {
+        position: relative;
+        display: grid;
+        min-height: 100vh;
+        place-items: center;
+        padding: 24px;
+        isolation: isolate;
+        background:
+          linear-gradient(rgba(0, 255, 0, 0.035) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(0, 255, 0, 0.035) 1px, transparent 1px),
+          var(--preto);
+        background-size: 32px 32px;
+      }
+
+      .tela-acesso::after {
+        position: absolute;
+        inset: 0;
+        z-index: -1;
+        pointer-events: none;
+        background: radial-gradient(
+          circle at center,
+          transparent 20%,
+          rgba(0, 0, 0, 0.88) 82%
+        );
+        content: "";
+      }
+
+      /* Mantém o painel de autenticação legível e com a mesma linguagem de terminal. */
+      .terminal-acesso {
+        width: min(100%, 520px);
+        border: 1px solid var(--verde);
+        background: rgba(10, 10, 10, 0.96);
+        box-shadow:
+          0 0 24px var(--verde-suave),
+          inset 0 0 18px rgba(0, 255, 0, 0.04);
+      }
+
+      .cabecalho-terminal {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        border-bottom: 1px solid var(--verde);
+        padding: 14px 18px;
+        font-size: 0.76rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .indicador-ativo {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--verde);
+      }
+
+      .indicador-ativo::before {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--verde);
+        box-shadow: 0 0 10px var(--verde);
+        content: "";
+      }
+
+      .conteudo-terminal {
+        padding: clamp(24px, 6vw, 42px);
+      }
+
+      .identidade-projeto {
+        margin: 0;
+        color: var(--verde);
+        font-size: clamp(1.55rem, 5vw, 2.4rem);
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        line-height: 1.1;
+        text-transform: uppercase;
+      }
+
+      .subtitulo {
+        margin: 12px 0 34px;
+        color: var(--cinza);
+        font-size: 0.78rem;
+        line-height: 1.6;
+        text-transform: uppercase;
+      }
+
+      .linha-comando {
+        margin: 0 0 26px;
+        color: var(--verde);
+        font-size: 0.78rem;
+      }
+
+      .grupo-campo {
+        display: grid;
+        gap: 8px;
+        margin-bottom: 20px;
+      }
+
+      .grupo-campo label {
+        color: var(--verde);
+        font-size: 0.76rem;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+
+      .grupo-campo input {
+        width: 100%;
+        border: 1px solid var(--verde);
+        border-radius: 0;
+        outline: 0;
+        padding: 13px 14px;
+        background: transparent;
+        color: var(--verde);
+        font: inherit;
+        caret-color: var(--verde);
+      }
+
+      .grupo-campo input:focus {
+        background: var(--verde-suave);
+        box-shadow: 0 0 0 1px var(--verde);
+      }
+
+      .grupo-campo input::placeholder {
+        color: rgba(139, 154, 139, 0.72);
+      }
+
+      /* O botão é a única ação da tela e comunica a entrada na operação. */
+      .botao-acesso {
+        width: 100%;
+        margin-top: 8px;
+        border: 1px solid var(--verde);
+        border-radius: 0;
+        padding: 14px 16px;
+        background: var(--verde);
+        color: var(--preto);
+        cursor: pointer;
+        font: inherit;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        transition:
+          background-color 160ms ease,
+          color 160ms ease,
+          box-shadow 160ms ease;
+      }
+
+      .botao-acesso:hover,
+      .botao-acesso:focus-visible {
+        background: var(--preto);
+        color: var(--verde);
+        outline: 0;
+        box-shadow: 0 0 14px var(--verde-suave);
+      }
+
+      .rodape-terminal {
+        border-top: 1px solid rgba(0, 255, 0, 0.28);
+        padding: 12px 18px;
+        color: var(--cinza);
+        font-size: 0.68rem;
+        line-height: 1.5;
+        text-align: center;
+        text-transform: uppercase;
+      }
+
+      @media (max-width: 520px) {
+        .tela-acesso {
+          padding: 14px;
+        }
+
+        .cabecalho-terminal {
+          align-items: flex-start;
+          flex-direction: column;
+          gap: 8px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="tela-acesso">
+      <section class="terminal-acesso" aria-labelledby="titulo-projeto">
+        <header class="cabecalho-terminal">
+          <span>ANPD // NÚCLEO DE OPERAÇÕES</span>
+          <span class="indicador-ativo">VIGILÂNCIA ATIVA</span>
+        </header>
+
+        <div class="conteudo-terminal">
+          <h1 class="identidade-projeto" id="titulo-projeto">
+            Projeto Redenção
+          </h1>
+          <p class="subtitulo">
+            Terminal de inteligência federal // acesso restrito
+          </p>
+          <p class="linha-comando">
+            &gt; AGUARDANDO CREDENCIAL DE AGENTE/PERITO_
+          </p>
+
+          <form id="formulario-acesso" novalidate>
+            <div class="grupo-campo">
+              <label for="credencial">Credencial de Agente/Perito</label>
+              <input
+                id="credencial"
+                name="credencial"
+                type="text"
+                autocomplete="off"
+                required
+                placeholder="Informe a credencial operacional"
+              />
+            </div>
+
+            <div class="grupo-campo">
+              <label for="chave">Chave de Acesso Governamental</label>
+              <input
+                id="chave"
+                name="chave"
+                type="password"
+                autocomplete="off"
+                required
+                placeholder="Informe a chave de acesso"
+              />
+            </div>
+
+            <button class="botao-acesso" type="submit">Validar acesso</button>
+          </form>
+        </div>
+
+        <footer class="rodape-terminal">
+          Sessão monitorada // dados de demonstração // LGPD
+        </footer>
+      </section>
+    </main>
+
+    <script>
+      // Controla a validação demonstrativa e libera o painel somente após os dois campos.
+      const formularioAcesso = document.querySelector("#formulario-acesso");
+      const campoCredencial = document.querySelector("#credencial");
+      const campoChave = document.querySelector("#chave");
+
+      formularioAcesso.addEventListener("submit", (evento) => {
+        evento.preventDefault();
+
+        const credencialValida = campoCredencial.value.trim().length > 0;
+        const chaveValida = campoChave.value.trim().length > 0;
+
+        if (!credencialValida || !chaveValida) {
+          window.alert(
+            "Acesso recusado: informe a Credencial de Agente/Perito e a Chave de Acesso Governamental.",
+          );
+          return;
+        }
+
+        // A sessão é apenas um sinal temporário de demonstração e não substitui autenticação real.
+        window.sessionStorage.setItem("redencaoAutorizada", "true");
+        window.location.href = "dashboard.html";
+      });
+    </script>
+  </body>
+</html>
