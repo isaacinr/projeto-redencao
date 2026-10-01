@@ -1,0 +1,1634 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#000000" />
+    <title>Projeto Redenção | God's Eye</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap"
+      rel="stylesheet"
+    />
+
+    <link
+      href="https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.css"
+      rel="stylesheet"
+    />
+
+    <style>
+      :root {
+        color-scheme: dark;
+        --preto: #000000;
+        --chumbo: #0a0a0a;
+        --verde: #00ff00;
+        --verde-fraco: rgba(0, 255, 0, 0.14);
+        --vermelho: #ff3333;
+        --vermelho-fraco: rgba(255, 51, 51, 0.16);
+        --azul: #00bfff;
+        --azul-fraco: rgba(0, 191, 255, 0.16);
+        --amarelo: #ffcc00;
+        --amarelo-fraco: rgba(255, 204, 0, 0.16);
+        --cinza: #869186;
+        --cinza-borda: #333333;
+        --fonte-terminal:
+          "Share Tech Mono", "Courier New", Courier, Consolas, monospace;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+      }
+
+      body {
+        background: var(--preto);
+        color: var(--verde);
+        font-family: var(--fonte-terminal);
+        position: relative;
+      }
+
+      /* Barra de Navegação entre Seções */
+      .navegacao-secoes {
+        position: absolute;
+        top: 16px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 50;
+        display: flex;
+        gap: 6px;
+        background: rgba(0, 0, 0, 0.9);
+        border: 1px solid var(--cinza-borda);
+        padding: 6px;
+        box-shadow: 0 0 15px rgba(0, 0, 0, 0.8);
+      }
+
+      .btn-secao {
+        background: transparent;
+        border: 1px solid var(--cinza-borda);
+        color: var(--cinza);
+        font: inherit;
+        font-size: 0.68rem;
+        padding: 6px 12px;
+        cursor: pointer;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .btn-secao.ativo {
+        border-color: var(--verde);
+        color: var(--verde);
+        background: rgba(0, 255, 0, 0.08);
+      }
+
+      .secao-conteudo {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        display: none;
+      }
+
+      .secao-conteudo.ativa {
+        display: block;
+      }
+
+      .mapa {
+        position: absolute;
+        top: 0;
+        left: 0;
+        z-index: 1;
+        width: 100%;
+        height: 100%;
+        background: var(--chumbo);
+      }
+
+      .mensagem-mapa {
+        position: absolute;
+        top: 70px;
+        left: 24px;
+        z-index: 6;
+        display: none;
+        max-width: min(460px, calc(100vw - 48px));
+        border: 1px solid var(--vermelho);
+        padding: 14px 16px;
+        background: rgba(0, 0, 0, 0.92);
+        color: var(--vermelho);
+        font-size: 0.78rem;
+        line-height: 1.55;
+        box-shadow: 0 0 18px var(--vermelho-fraco);
+      }
+
+      .mensagem-mapa.visivel {
+        display: block;
+      }
+
+      .cabecalho-operacao {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        z-index: 10;
+        pointer-events: none;
+        text-shadow: 0 0 8px rgba(0, 255, 0, 0.55);
+      }
+
+      .cabecalho-operacao h1 {
+        margin: 0;
+        font-size: clamp(1rem, 2vw, 1.35rem);
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      .cabecalho-operacao p {
+        margin: 6px 0 0;
+        color: var(--cinza);
+        font-size: 0.68rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      /* Painel de Alertas Críticos */
+      .painel-alertas {
+        position: absolute;
+        top: 86px;
+        left: 20px;
+        z-index: 10;
+        width: min(340px, calc(100vw - 40px));
+        border: 1px solid var(--vermelho);
+        background: rgba(10, 10, 10, 0.92);
+        box-shadow: 0 0 18px var(--vermelho-fraco);
+      }
+
+      .painel-alertas.pulso {
+        animation: pulso-alerta 1.2s ease-in-out infinite;
+      }
+
+      .cabecalho-alertas {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        border-bottom: 1px solid var(--vermelho);
+        padding: 10px 12px;
+        color: var(--vermelho);
+        font-size: 0.72rem;
+        letter-spacing: 0.08em;
+      }
+
+      .lista-alertas {
+        max-height: 120px;
+        overflow-y: auto;
+        padding: 8px 12px;
+      }
+
+      .alerta-critico {
+        border-left: 2px solid var(--vermelho);
+        padding: 6px 8px;
+        color: #ff9999;
+        font-size: 0.66rem;
+        line-height: 1.4;
+      }
+
+      .alerta-critico.pista {
+        border-left-color: var(--amarelo);
+        color: #ffe680;
+        background: rgba(255, 204, 0, 0.08);
+      }
+
+      .alerta-critico + .alerta-critico {
+        margin-top: 6px;
+      }
+
+      .botao-padrao {
+        border: 1px solid var(--vermelho);
+        border-radius: 0;
+        background: transparent;
+        color: var(--vermelho);
+        cursor: pointer;
+        font: inherit;
+        font-size: 0.64rem;
+        letter-spacing: 0.04em;
+        padding: 7px 9px;
+      }
+
+      .botao-padrao:hover,
+      .botao-padrao:focus-visible {
+        background: var(--vermelho);
+        color: var(--preto);
+        outline: 0;
+      }
+
+      .botao-azul {
+        border-color: var(--azul);
+        color: var(--azul);
+      }
+
+      .botao-azul:hover,
+      .botao-azul:focus-visible {
+        background: var(--azul);
+        color: var(--preto);
+      }
+
+      .painel-alertas.silenciado {
+        border-color: var(--cinza-borda);
+        box-shadow: none;
+      }
+
+      .painel-alertas.silenciado .cabecalho-alertas,
+      .painel-alertas.silenciado .alerta-critico {
+        color: var(--cinza);
+      }
+
+      @keyframes pulso-alerta {
+        0%,
+        100% {
+          box-shadow: 0 0 8px var(--vermelho-fraco);
+        }
+        50% {
+          box-shadow: 0 0 26px rgba(255, 51, 51, 0.62);
+        }
+      }
+
+      /* Painel Lateral Fixo (Dossiê ou Policial) */
+      .painel-lateral {
+        position: absolute;
+        top: 220px;
+        left: 20px;
+        z-index: 25;
+        display: flex;
+        width: 360px;
+        max-height: calc(100vh - 240px);
+        flex-direction: column;
+        border: 1px solid var(--verde);
+        background: rgba(0, 0, 0, 0.95);
+        box-shadow: 0 0 22px var(--verde-fraco);
+      }
+
+      .painel-lateral[hidden] {
+        display: none;
+      }
+
+      .painel-lateral.policial {
+        border-color: var(--azul);
+        box-shadow: 0 0 22px var(--azul-fraco);
+      }
+
+      .cabecalho-painel-lateral {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid var(--verde);
+        padding: 10px 12px;
+        background: rgba(0, 15, 0, 0.9);
+      }
+
+      .painel-lateral.policial .cabecalho-painel-lateral {
+        border-bottom-color: var(--azul);
+        background: rgba(0, 15, 30, 0.9);
+      }
+
+      .conteudo-scroll {
+        padding: 14px;
+        overflow-y: auto;
+        min-height: 0;
+        scrollbar-color: var(--verde) var(--chumbo);
+        scrollbar-width: thin;
+      }
+
+      .painel-lateral.policial .conteudo-scroll {
+        scrollbar-color: var(--azul) var(--chumbo);
+      }
+
+      .conteudo-scroll::-webkit-scrollbar {
+        width: 5px;
+      }
+
+      .conteudo-scroll::-webkit-scrollbar-track {
+        background: var(--chumbo);
+      }
+
+      .conteudo-scroll::-webkit-scrollbar-thumb {
+        background: var(--verde);
+      }
+
+      .painel-lateral.policial .conteudo-scroll::-webkit-scrollbar-thumb {
+        background: var(--azul);
+      }
+
+      /* Estilos Dossiê */
+      .dossie-cabecalho {
+        display: grid;
+        grid-template-columns: 68px 1fr;
+        gap: 12px;
+        align-items: center;
+        border-bottom: 1px solid var(--cinza-borda);
+        padding-bottom: 12px;
+      }
+
+      .dossie-foto {
+        width: 68px;
+        height: 68px;
+        border: 1px solid var(--vermelho);
+        object-fit: cover;
+        filter: grayscale(0.55) contrast(1.2);
+      }
+
+      .dossie-kicker {
+        margin: 0 0 4px;
+        color: var(--cinza);
+        font-size: 0.6rem;
+        letter-spacing: 0.08em;
+      }
+
+      .dossie-nome {
+        margin: 0;
+        color: var(--verde);
+        font-size: 0.88rem;
+        font-weight: 400;
+      }
+
+      .dossie-status {
+        display: inline-block;
+        margin-top: 5px;
+        color: var(--vermelho);
+        font-size: 0.62rem;
+        letter-spacing: 0.08em;
+      }
+
+      .dossie-dados {
+        margin: 10px 0;
+      }
+
+      .dossie-dados p {
+        margin: 5px 0;
+        font-size: 0.68rem;
+        line-height: 1.4;
+      }
+
+      .dossie-dados strong {
+        color: var(--cinza);
+        font-weight: 400;
+      }
+
+      .alerta-ameaca {
+        border: 1px solid var(--vermelho);
+        background: rgba(255, 51, 51, 0.1);
+        padding: 8px;
+        margin-top: 8px;
+        font-size: 0.66rem;
+        color: #ff9999;
+      }
+
+      .alerta-ameaca.moderado {
+        border-color: var(--amarelo);
+        background: rgba(255, 204, 0, 0.1);
+        color: #ffe680;
+      }
+
+      .chat-interceptado {
+        border: 1px dashed var(--vermelho);
+        background: #020000;
+        padding: 8px;
+        margin-top: 8px;
+        font-size: 0.64rem;
+        max-height: 90px;
+        overflow-y: auto;
+        color: #ffb3b3;
+      }
+
+      .dossie-secao {
+        border-top: 1px solid var(--cinza-borda);
+        margin-top: 10px;
+        padding-top: 8px;
+      }
+
+      .dossie-secao-titulo {
+        display: block;
+        margin-bottom: 5px;
+        color: var(--cinza);
+        font-size: 0.62rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .dossie-lista {
+        margin: 0;
+        padding-left: 14px;
+        color: var(--verde);
+        font-size: 0.66rem;
+        line-height: 1.4;
+      }
+
+      .dossie-acoes {
+        border-top: 1px solid var(--cinza-borda);
+        margin-top: 12px;
+        padding-top: 10px;
+      }
+
+      .subterminal-grampo {
+        margin-top: 8px;
+        border: 1px solid var(--vermelho);
+        padding: 8px;
+        background: #020202;
+        color: var(--vermelho);
+        font-size: 0.62rem;
+        line-height: 1.4;
+        max-height: 90px;
+        overflow-y: auto;
+      }
+
+      .subterminal-grampo[hidden] {
+        display: none;
+      }
+
+      .linha-grampo {
+        margin: 0 0 5px;
+      }
+
+      .linha-grampo.hex {
+        color: #ff9999;
+      }
+
+      .linha-grampo.texto {
+        color: var(--verde);
+      }
+
+      /* Mini Radar de Satélite Embutido */
+      .mini-radar-container {
+        margin-top: 10px;
+        border: 1px solid var(--verde);
+        background: #000;
+        position: relative;
+      }
+
+      .mini-radar-titulo {
+        background: rgba(0, 255, 0, 0.1);
+        padding: 4px 8px;
+        font-size: 0.62rem;
+        color: var(--verde);
+        letter-spacing: 0.08em;
+        border-bottom: 1px solid var(--verde);
+        display: flex;
+        justify-content: space-between;
+      }
+
+      .mini-mapa-canvas {
+        width: 100%;
+        height: 130px;
+        position: relative;
+      }
+
+      /* Estilos Chat Policial */
+      .chat-policial-container {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .historico-chat {
+        border: 1px solid var(--azul);
+        background: #020408;
+        height: 180px;
+        overflow-y: auto;
+        padding: 8px;
+        font-size: 0.68rem;
+        line-height: 1.45;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .msg-chat {
+        padding: 6px 8px;
+        border-left: 2px solid var(--azul);
+        background: rgba(0, 191, 255, 0.06);
+        color: #cceeff;
+      }
+
+      .msg-chat.agente {
+        border-left-color: var(--verde);
+        background: rgba(0, 255, 0, 0.06);
+        color: var(--verde);
+      }
+
+      .chat-input-area {
+        display: flex;
+        gap: 6px;
+      }
+
+      .chat-input-area input {
+        flex: 1;
+        background: #000;
+        border: 1px solid var(--azul);
+        color: var(--azul);
+        font: inherit;
+        font-size: 0.68rem;
+        padding: 6px 8px;
+      }
+
+      .chat-input-area input:focus {
+        outline: 0;
+        box-shadow: 0 0 8px var(--azul-fraco);
+      }
+
+      /* Banner de Modo Emboscada Ativo */
+      .banner-emboscada {
+        position: absolute;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 30;
+        border: 1px solid var(--azul);
+        background: rgba(0, 10, 20, 0.95);
+        padding: 10px 18px;
+        color: var(--azul);
+        font-size: 0.72rem;
+        letter-spacing: 0.08em;
+        box-shadow: 0 0 20px var(--azul-fraco);
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+
+      .banner-emboscada[hidden] {
+        display: none;
+      }
+
+      /* Marcadores no Mapa */
+      .marcador-alvo {
+        width: 18px;
+        height: 18px;
+        border: 2px solid #ffffff;
+        border-radius: 50% 50% 50% 0;
+        background: var(--vermelho);
+        box-shadow:
+          0 0 0 4px var(--vermelho-fraco),
+          0 0 18px var(--vermelho);
+        cursor: pointer;
+        transform: rotate(-45deg);
+      }
+
+      .marcador-alvo::after {
+        display: block;
+        width: 4px;
+        height: 4px;
+        margin: 5px auto 0;
+        border-radius: 50%;
+        background: #ffffff;
+        content: "";
+      }
+
+      .marcador-policia {
+        width: 24px;
+        height: 24px;
+        border: 2px solid #ffffff;
+        border-radius: 50%;
+        background: var(--azul);
+        box-shadow:
+          0 0 0 4px var(--azul-fraco),
+          0 0 16px var(--azul);
+        cursor: pointer;
+        display: grid;
+        place-items: center;
+        font-size: 0.65rem;
+        color: #000;
+        font-weight: bold;
+      }
+
+      .ponto-destino-emboscada {
+        width: 16px;
+        height: 16px;
+        border: 2px solid var(--azul);
+        background: rgba(0, 191, 255, 0.4);
+        border-radius: 50%;
+        animation: pulso-emboscada 1s ease-in-out infinite;
+      }
+
+      @keyframes pulso-emboscada {
+        0%,
+        100% {
+          transform: scale(1);
+          box-shadow: 0 0 0 0 var(--azul);
+        }
+        50% {
+          transform: scale(1.4);
+          box-shadow: 0 0 12px 4px var(--azul);
+        }
+      }
+
+      /* Painel IoT Direito e Análise de Captura */
+      .painel-iot {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        z-index: 10;
+        display: flex;
+        width: 360px;
+        height: 440px;
+        max-width: calc(100vw - 40px);
+        flex-direction: column;
+        border: 1px solid var(--cinza-borda);
+        background: rgba(0, 0, 0, 0.88);
+        box-shadow:
+          0 0 18px var(--verde-fraco),
+          inset 0 0 18px rgba(0, 255, 0, 0.04);
+      }
+
+      .cabecalho-iot {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex: 0 0 auto;
+        border-bottom: 1px solid var(--cinza-borda);
+        padding: 12px 14px;
+        background: rgba(10, 10, 10, 0.96);
+        font-size: 0.72rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .cabecalho-iot strong {
+        color: var(--verde);
+        font-weight: 400;
+      }
+
+      .status-transmissao {
+        color: var(--vermelho);
+        font-size: 0.62rem;
+      }
+
+      .status-transmissao::before {
+        display: inline-block;
+        width: 6px;
+        height: 6px;
+        margin-right: 6px;
+        border-radius: 50%;
+        background: var(--vermelho);
+        box-shadow: 0 0 8px var(--vermelho);
+        content: "";
+      }
+
+      .terminal-logs {
+        min-height: 0;
+        overflow-y: auto;
+        padding: 12px;
+        scrollbar-color: var(--verde) var(--chumbo);
+        scrollbar-width: thin;
+        flex: 1;
+      }
+
+      .terminal-logs::-webkit-scrollbar {
+        width: 5px;
+      }
+
+      .terminal-logs::-webkit-scrollbar-track {
+        background: var(--chumbo);
+      }
+
+      .terminal-logs::-webkit-scrollbar-thumb {
+        background: var(--verde);
+      }
+
+      .linha-log {
+        margin: 0 0 10px;
+        border-left: 2px solid var(--verde);
+        padding: 7px 9px;
+        background: rgba(0, 255, 0, 0.04);
+        color: var(--verde);
+        font-size: 0.7rem;
+        line-height: 1.45;
+      }
+
+      .linha-log:last-child {
+        margin-bottom: 0;
+      }
+
+      .linha-log.alerta {
+        border-left-color: var(--vermelho);
+        background: var(--vermelho-fraco);
+        color: var(--vermelho);
+      }
+
+      .hora-log {
+        color: var(--cinza);
+      }
+
+      .linha-log.alerta .hora-log {
+        color: #ff9999;
+      }
+
+      .secao-analise-prioridade {
+        border-top: 1px solid var(--cinza-borda);
+        padding: 10px 12px;
+        background: rgba(0, 0, 0, 0.95);
+        max-height: 150px;
+        overflow-y: auto;
+      }
+
+      .item-prioridade {
+        font-size: 0.65rem;
+        padding: 4px 0;
+        border-bottom: 1px dashed #222;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      /* God's Eye & OSINT Extras */
+      .container-godseye {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 1;
+        background: #020202;
+      }
+
+      .hud-orbital-overlay {
+        position: absolute;
+        inset: 0;
+        z-index: 5;
+        pointer-events: none;
+        background:
+          radial-gradient(
+            circle at center,
+            transparent 40%,
+            rgba(0, 0, 0, 0.75) 90%
+          ),
+          repeating-linear-gradient(
+            0deg,
+            rgba(0, 255, 0, 0.03),
+            rgba(0, 255, 0, 0.03) 1px,
+            transparent 1px,
+            transparent 2px
+          );
+      }
+
+      .painel-controle-godseye {
+        position: absolute;
+        top: 76px;
+        right: 20px;
+        z-index: 10;
+        width: 320px;
+        border: 1px solid var(--azul);
+        background: rgba(0, 5, 12, 0.92);
+        box-shadow: 0 0 20px var(--azul-fraco);
+        padding: 14px;
+      }
+
+      .painel-controle-godseye h3 {
+        margin: 0 0 8px;
+        color: var(--azul);
+        font-size: 0.75rem;
+        letter-spacing: 0.1em;
+        border-bottom: 1px solid var(--azul);
+        padding-bottom: 6px;
+      }
+
+      .dados-telemetria-orbital {
+        font-size: 0.65rem;
+        line-height: 1.5;
+        color: #cceeff;
+        margin-bottom: 10px;
+      }
+
+      .filtro-sensor-ativo {
+        filter: none;
+        transition: filter 0.4s ease;
+      }
+      .filtro-nvg {
+        filter: sepia(1) hue-rotate(60deg) saturate(3.5) contrast(1.5);
+      }
+      .filtro-flir {
+        filter: invert(1) hue-rotate(180deg) contrast(2);
+      }
+
+      .painel-osint-completo {
+        position: absolute;
+        top: 80px;
+        left: 50px;
+        right: 50px;
+        bottom: 50px;
+        background: rgba(5, 5, 5, 0.96);
+        border: 1px solid var(--azul);
+        z-index: 20;
+        padding: 20px;
+        overflow-y: auto;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+      }
+      .card-osint {
+        border: 1px solid var(--cinza-borda);
+        padding: 15px;
+        background: #020408;
+      }
+      .card-osint h3 {
+        margin-top: 0;
+        color: var(--azul);
+        font-size: 0.85rem;
+        border-bottom: 1px solid var(--azul);
+        padding-bottom: 6px;
+      }
+
+      @media (max-width: 700px) {
+        .painel-iot {
+          top: auto;
+          right: 14px;
+          bottom: 14px;
+          left: 14px;
+          width: auto;
+          height: min(240px, 35vh);
+        }
+        .painel-lateral {
+          top: auto;
+          bottom: 14px;
+          left: 14px;
+          right: 14px;
+          width: auto;
+          max-height: 40vh;
+        }
+        .painel-alertas {
+          top: 80px;
+          left: 14px;
+        }
+        .painel-osint-completo {
+          grid-template-columns: 1fr;
+          left: 15px;
+          right: 15px;
+          top: 70px;
+          bottom: 20px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Navegação de Abas -->
+    <nav class="navegacao-secoes" aria-label="Navegação de Seções">
+      <button class="btn-secao ativo" data-alvo="secao-tatica">
+        🗺️ Radar Tático & Viaturas
+      </button>
+      <button class="btn-secao" data-alvo="secao-godseye">
+        👁️ God's Eye (Orbital)
+      </button>
+      <button class="btn-secao" data-alvo="secao-osint">
+        📡 Central OSINT & Veículos
+      </button>
+    </nav>
+
+    <!-- SEÇÃO 1: RADAR TÁTICO -->
+    <section id="secao-tatica" class="secao-conteudo ativa">
+      <div id="mapa" class="mapa" aria-label="Mapa tático 3D de Guanambi"></div>
+
+      <div
+        id="mensagem-mapa"
+        class="mensagem-mapa"
+        role="alert"
+        aria-live="assertive"
+      ></div>
+
+      <header class="cabecalho-operacao" aria-label="Identificação da operação">
+        <h1>Redenção // God's Eye</h1>
+        <p>Guanambi, Bahia // vigilância ativa // quadrante federal</p>
+      </header>
+
+      <section
+        id="painel-alertas"
+        class="painel-alertas"
+        aria-labelledby="titulo-alertas"
+      >
+        <header class="cabecalho-alertas">
+          <strong id="titulo-alertas">ALERTAS CRÍTICOS &amp; PISTAS</strong>
+          <button id="botao-silenciar" class="botao-padrao" type="button">
+            SILENCIAR
+          </button>
+        </header>
+        <div id="lista-alertas" class="lista-alertas" aria-live="assertive">
+          <div class="alerta-critico">
+            Aguardando nova interceptação telemática...
+          </div>
+        </div>
+      </section>
+
+      <!-- Banner de Modo Emboscada -->
+      <div id="banner-emboscada" class="banner-emboscada" hidden>
+        <span id="texto-banner-emboscada"
+          >MODO EMBOSCADA: Clique no mapa para posicionar a unidade.</span
+        >
+        <button id="btn-cancelar-emboscada" class="botao-padrao" type="button">
+          CANCELAR
+        </button>
+      </div>
+
+      <!-- Painel Lateral Fixo (Dossiê ou Policial) -->
+      <aside
+        id="painel-lateral"
+        class="painel-lateral"
+        hidden
+        aria-label="Painel de Informações"
+      >
+        <header class="cabecalho-painel-lateral">
+          <span
+            id="titulo-painel-lateral"
+            style="font-size: 0.72rem; letter-spacing: 0.08em"
+            >PAINEL TÁTICO</span
+          >
+          <button id="botao-fechar-painel" class="botao-padrao" type="button">
+            FECHAR [X]
+          </button>
+        </header>
+        <div id="conteudo-painel-lateral" class="conteudo-scroll"></div>
+      </aside>
+
+      <aside class="painel-iot" aria-labelledby="titulo-terminal">
+        <header class="cabecalho-iot">
+          <strong id="titulo-terminal">Inteligência IoT &amp; Análise</strong>
+          <span class="status-transmissao">Ao vivo</span>
+        </header>
+        <div
+          id="terminal-logs"
+          class="terminal-logs"
+          role="log"
+          aria-live="polite"
+        ></div>
+        <section class="secao-analise-prioridade">
+          <span class="dossie-secao-titulo" style="margin-bottom: 4px"
+            >🎯 Fila de Captura Prioritária (IA)</span
+          >
+          <div id="lista-prioridade-ia">Calculando alvos prioritários...</div>
+        </section>
+      </aside>
+    </section>
+
+    <!-- SEÇÃO 2: GOD'S EYE ORBITAL (TELA CHEIA REAL & SENSORES TÉRMICOS) -->
+    <section id="secao-godseye" class="secao-conteudo">
+      <div class="container-godseye">
+        <div id="mapa-godseye" class="mapa filtro-sensor-ativo"></div>
+        <div class="hud-orbital-overlay"></div>
+      </div>
+
+      <header class="cabecalho-operacao" style="z-index: 10">
+        <h1>God's Eye // Orbital Feed 4K</h1>
+        <p>Satélite de Reconhecimento Global // Telemetria Ativa</p>
+      </header>
+
+      <div class="painel-controle-godseye">
+        <h3>🛰️ SENSORES DE ÓRBITA</h3>
+        <div class="dados-telemetria-orbital">
+          STATUS: <span style="color: var(--verde)">LINK ESTÁVEL</span><br />
+          ÓRBITA: GEO-SYNCHRONOUS // ALT: 450KM<br />
+          LAT/LONG: -14.2263° S, 42.7816° W
+        </div>
+        <span
+          style="
+            display: block;
+            margin-bottom: 6px;
+            color: var(--azul);
+            font-size: 0.65rem;
+          "
+          >MODOS DE ESPECTRO TÁTICO:</span
+        >
+        <div style="display: flex; gap: 6px">
+          <button
+            class="botao-padrao botao-azul"
+            onclick="mudarSensor('normal')"
+            style="flex: 1; font-size: 0.6rem"
+          >
+            RGB Satélite
+          </button>
+          <button
+            class="botao-padrao botao-azul"
+            onclick="mudarSensor('nvg')"
+            style="flex: 1; font-size: 0.6rem"
+          >
+            NVG Noturno
+          </button>
+          <button
+            class="botao-padrao botao-azul"
+            onclick="mudarSensor('flir')"
+            style="flex: 1; font-size: 0.6rem"
+          >
+            FLIR Térmico
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- SEÇÃO 3: CENTRAL OSINT & VEÍCULOS -->
+    <section id="secao-osint" class="secao-conteudo">
+      <div class="painel-osint-completo">
+        <div class="card-osint">
+          <h3>📡 Interceptações & Pistas Coletadas</h3>
+          <p style="color: var(--amarelo)">
+            Termos-chave rastreados em tempo real por escuta telemática:
+          </p>
+          <ul style="padding-left: 16px; line-height: 1.6; font-size: 0.72rem">
+            <li>
+              <strong>[ALVO FIXO-01]:</strong> "Vou queimar o HD principal assim
+              que a viatura dobrar..."
+              <em style="color: var(--vermelho)">(Risco Alto - Armado)</em>
+            </li>
+            <li>
+              <strong>[ALVO FIXO-02]:</strong> "Apaguei os logs do servidor
+              proxy..." <em style="color: var(--amarelo)">(Risco Moderado)</em>
+            </li>
+            <li>
+              <strong>[R-94812]:</strong> "Passagem livre pela BR-030 sentido
+              Caetité..."
+              <em style="color: var(--vermelho)">(Rota de Fuga Ativa)</em>
+            </li>
+          </ul>
+        </div>
+        <div class="card-osint">
+          <h3>🚗 Consulta de Veículos (DENATRAN / ALPR)</h3>
+          <table
+            style="
+              width: 100%;
+              font-size: 0.68rem;
+              border-collapse: collapse;
+              margin-top: 10px;
+            "
+          >
+            <tr style="border-bottom: 1px solid #333; color: var(--azul)">
+              <th style="text-align: left; padding: 4px">Placa</th>
+              <th style="text-align: left; padding: 4px">Modelo / Cor</th>
+              <th style="text-align: left; padding: 4px">Status Restrição</th>
+            </tr>
+            <tr style="border-bottom: 1px dashed #222">
+              <td style="padding: 4px">RDN-7A21</td>
+              <td style="padding: 4px">Toyota Corolla Prata</td>
+              <td style="padding: 4px; color: var(--vermelho)">
+                Alerta ALPR / Mandado
+              </td>
+            </tr>
+            <tr style="border-bottom: 1px dashed #222">
+              <td style="padding: 4px">QWE-4C19</td>
+              <td style="padding: 4px">Honda Civic Preto</td>
+              <td style="padding: 4px; color: var(--amarelo)">Placa Clonada</td>
+            </tr>
+            <tr>
+              <td style="padding: 4px">JXY-4982</td>
+              <td style="padding: 4px">Moto CG 150 Titan</td>
+              <td style="padding: 4px; color: var(--vermelho)">
+                Busca & Apreensão
+              </td>
+            </tr>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6.5.0/turf.min.js"></script>
+    <script>
+      const sessaoAutorizada =
+        window.sessionStorage.getItem("redencaoAutorizada") === "true";
+
+      if (!sessaoAutorizada) {
+        document.body.innerHTML = `
+          <main style="display:grid;place-items:center;min-height:100vh;padding:24px;background:#000;color:#ff3333;font-family:Courier New,monospace;text-align:center">
+            <section style="max-width:520px;border:1px solid #ff3333;padding:28px;background:#0a0a0a">
+              <h1 style="font-size:1rem;font-weight:400;letter-spacing:.08em">ACESSO NEGADO</h1>
+              <p style="line-height:1.6">Valide a credencial de Agente/Perito e a Chave de Acesso Governamental.</p>
+              <a href="index.html" style="color:#00ff00">Retornar ao terminal de acesso</a>
+            </section>
+          </main>`;
+      } else {
+        const botoesSecao = document.querySelectorAll(".btn-secao");
+        const conteudosSecao = document.querySelectorAll(".secao-conteudo");
+
+        botoesSecao.forEach((btn) => {
+          btn.addEventListener("click", () => {
+            botoesSecao.forEach((b) => b.classList.remove("ativo"));
+            conteudosSecao.forEach((c) => c.classList.remove("ativa"));
+            btn.classList.add("ativo");
+            const alvoSecao = document.getElementById(btn.dataset.alvo);
+            alvoSecao.classList.add("ativa");
+
+            if (btn.dataset.alvo === "secao-godseye") {
+              setTimeout(() => {
+                mapaGodsEye.resize();
+              }, 150);
+            } else if (btn.dataset.alvo === "secao-tatica") {
+              setTimeout(() => {
+                mapa.resize();
+              }, 150);
+            }
+          });
+        });
+
+        function mudarSensor(tipo) {
+          const mapaDiv = document.getElementById("mapa-godseye");
+          mapaDiv.className = "mapa filtro-sensor-ativo";
+          if (tipo === "nvg") mapaDiv.classList.add("filtro-nvg");
+          if (tipo === "flir") mapaDiv.classList.add("filtro-flir");
+        }
+
+        const alvosInvestigativos = [
+          {
+            id: "FIXO-01",
+            tipo: "DISPOSITIVO INTERCEPTADO",
+            coordenadas: [-42.78182, -14.22608],
+            nome: "Rafael Monteiro",
+            idade: 38,
+            cpf: "***.482.***-09",
+            rg: "MG-24.781.903",
+            endereco: "Rua da Liberdade, 214, Guanambi-BA",
+            ip: "192.168.0.1",
+            ipsAssociados: ["192.168.0.1", "10.14.77.42"],
+            isp: "Provedor Sertão Digital",
+            veiculos: [
+              {
+                placa: "RDN-7A21",
+                modelo: "Toyota Corolla Prata",
+                status: "Licenciado / Alerta ALPR",
+              },
+              {
+                placa: "JXY-4982",
+                modelo: "Honda CG 150 Titan Preta",
+                status: "Busca e Apreensão",
+              },
+            ],
+            status: "Interceptado",
+            infracao: "Vazamento de Dados da LGPD",
+            historico: "Acesso indevido a cadastro de titulares federais",
+            vinculo: "Socio de infraestrutura de Caio Vasconcelos (FIXO-02)",
+            periculosidade:
+              "ALTO RISCO - Potencialmente Armado (.45 ACP em residência)",
+            conversas: [
+              "Vou queimar o HD principal assim que a viatura dobrar a esquina.",
+              "Peguei a arma velha no paiol do sítio, não vou render fácil.",
+              "A rota pela BR-030 sentido Caetité está limpa às 03h.",
+            ],
+          },
+          {
+            id: "FIXO-02",
+            tipo: "SERVIDOR SOB INVESTIGAÇÃO",
+            coordenadas: [-42.78096, -14.22702],
+            nome: "Caio Vasconcelos",
+            idade: 42,
+            cpf: "***.719.***-44",
+            rg: "BA-18.443.620",
+            endereco: "Avenida Guanabara, 880, Guanambi-BA",
+            ip: "10.14.77.42",
+            ipsAssociados: ["10.14.77.42", "172.16.8.14"],
+            isp: "BahiaLink Telecom",
+            veiculos: [
+              {
+                placa: "QWE-4C19",
+                modelo: "Honda Civic Preto",
+                status: "Regular / Placa Clonada",
+              },
+            ],
+            status: "Monitorado",
+            infracao: "Compartilhamento Ilegal de Credenciais",
+            historico:
+              "Vínculo investigativo com exfiltração de dados bancários",
+            vinculo:
+              "Receptor de arquivos exfiltrados por Rafael Monteiro (FIXO-01)",
+            periculosidade:
+              "MODERADO - Sem porte de arma registrado, reativo verbalmente",
+            conversas: [
+              "Apaguei os logs do servidor proxy, mas os federais já devem ter espelhado.",
+              "Encontro marcado atrás do mercado municipal para entrega do pendrive.",
+            ],
+          },
+        ];
+
+        const unidadesPoliciais = [
+          {
+            id: "EQ-01",
+            nome: "Equipe Tática Alfa 01",
+            coordenadas: [-42.7845, -14.2235],
+            status: "Em patrulha ostensiva",
+            chat: [
+              {
+                remetente: "Equipe Alfa 01",
+                texto: "QAP por aqui, Central. Aguardando diretrizes.",
+              },
+            ],
+          },
+          {
+            id: "EQ-02",
+            nome: "Equipe Tática Bravo 02",
+            coordenadas: [-42.7785, -14.229],
+            status: "Posicionado próximo ao eixo comercial",
+            chat: [
+              {
+                remetente: "Equipe Bravo 02",
+                texto: "Perímetro sob controle na área central.",
+              },
+            ],
+          },
+          {
+            id: "EQ-03",
+            nome: "Equipe Tática Delta 03",
+            coordenadas: [-42.788, -14.221],
+            status: "Monitorando eixo norte",
+            chat: [
+              {
+                remetente: "Equipe Delta 03",
+                texto: "Rodovia BR-030 sob vigilância visual.",
+              },
+            ],
+          },
+        ];
+
+        mapboxgl.accessToken = mapboxgl.accessToken = "COLOQUE_SEU_TOKEN_AQUI";
+
+        const elementoMapa = document.querySelector("#mapa");
+        const terminalLogs = document.querySelector("#terminal-logs");
+        const painelAlertas = document.querySelector("#painel-alertas");
+        const listaAlertas = document.querySelector("#lista-alertas");
+        const botaoSilenciar = document.querySelector("#botao-silenciar");
+        const painelLateral = document.querySelector("#painel-lateral");
+        const tituloPainelLateral = document.querySelector(
+          "#titulo-painel-lateral",
+        );
+        const conteudoPainelLateral = document.querySelector(
+          "#conteudo-painel-lateral",
+        );
+        const botaoFecharPainel = document.querySelector(
+          "#botao-fechar-painel",
+        );
+        const bannerEmboscada = document.querySelector("#banner-emboscada");
+        const btnCancelarEmboscada = document.querySelector(
+          "#btn-cancelar-emboscada",
+        );
+        const listaPrioridadeIa = document.querySelector(
+          "#lista-prioridade-ia",
+        );
+
+        let alarmeSilenciado = false;
+        let unidadeEmModoEmboscada = null;
+        let ultimoAlvoSelecionado = null;
+        let marcadoresPoliciaisNoMapa = [];
+        let marcadorDestinoAtual = null;
+
+        botaoSilenciar.addEventListener("click", () => {
+          alarmeSilenciado = !alarmeSilenciado;
+          painelAlertas.classList.toggle("silenciado", alarmeSilenciado);
+          painelAlertas.classList.toggle("pulso", !alarmeSilenciado);
+          botaoSilenciar.textContent = alarmeSilenciado
+            ? "REATIVAR"
+            : "SILENCIAR";
+        });
+
+        botaoFecharPainel.addEventListener("click", () => {
+          painelLateral.hidden = true;
+        });
+        btnCancelarEmboscada.addEventListener("click", () => {
+          unidadeEmModoEmboscada = null;
+          bannerEmboscada.hidden = true;
+        });
+
+        const mapa = new mapboxgl.Map({
+          container: elementoMapa,
+          style: "mapbox://styles/mapbox/dark-v11",
+          center: [-42.7816, -14.2263],
+          zoom: 15.5,
+          pitch: 60,
+          bearing: -17.6,
+          antialias: true,
+        });
+
+        const mapaGodsEye = new mapboxgl.Map({
+          container: "mapa-godseye",
+          style: "mapbox://styles/mapbox/satellite-v9",
+          center: [-42.7816, -14.2263],
+          zoom: 14.5,
+          pitch: 45,
+          antialias: true,
+        });
+
+        mapa.addControl(
+          new mapboxgl.NavigationControl({ showCompass: true }),
+          "bottom-left",
+        );
+
+        mapa.on("click", (evento) => {
+          if (!unidadeEmModoEmboscada) return;
+          const coordsDestino = [evento.lngLat.lng, evento.lngLat.lat];
+          const unidade = unidadeEmModoEmboscada;
+          unidade.coordenadas = coordsDestino;
+          unidade.status = "Posicionado em cerco tático";
+          atualizarMarcadoresPoliciais();
+
+          if (marcadorDestinoAtual) marcadorDestinoAtual.remove();
+          const elDestino = document.createElement("div");
+          elDestino.className = "ponto-destino-emboscada";
+          marcadorDestinoAtual = new mapboxgl.Marker({ element: elDestino })
+            .setLngLat(coordsDestino)
+            .addTo(mapa);
+
+          const linhaGeo = turf.lineString([
+            unidade.coordenadas,
+            coordsDestino,
+          ]);
+          if (mapa.getSource("rota-emboscada")) {
+            mapa.getSource("rota-emboscada").setData(linhaGeo);
+          } else {
+            mapa.addSource("rota-emboscada", {
+              type: "geojson",
+              data: linhaGeo,
+            });
+            mapa.addLayer({
+              id: "rota-emboscada",
+              type: "line",
+              source: "rota-emboscada",
+              paint: {
+                "line-color": "#00bfff",
+                "line-width": 2,
+                "line-dasharray": [1, 1],
+              },
+            });
+          }
+
+          unidade.chat.push({
+            remetente: "Central / God's Eye",
+            texto: `ORDEM DE EMBOSCADA: Deslocar para [${coordsDestino[1].toFixed(4)}, ${coordsDestino[0].toFixed(4)}].`,
+          });
+          adicionarLogHTML(
+            `<span class="linha-log alerta"><span class="hora-log">[EMBOSCADA]</span> ${unidade.nome} posicionada.</span>`,
+          );
+          unidadeEmModoEmboscada = null;
+          bannerEmboscada.hidden = true;
+          renderizarPainelPolicial(unidade);
+        });
+
+        const encontrarAgenteMaisProximo = (coordsAlvo) => {
+          const pontoAlvo = turf.point(coordsAlvo);
+          let maisProximo = unidadesPoliciais[0];
+          let menorDistancia = Infinity;
+          unidadesPoliciais.forEach((unidade) => {
+            const distancia = turf.distance(
+              pontoAlvo,
+              turf.point(unidade.coordenadas),
+              { units: "kilometers" },
+            );
+            if (distancia < menorDistancia) {
+              menorDistancia = distancia;
+              maisProximo = unidade;
+            }
+          });
+          return { unidade: maisProximo, distanciaKm: menorDistancia };
+        };
+
+        const rodoviasSaida = [
+          [-42.7422, -14.2056],
+          [-42.8124, -14.2498],
+        ];
+        let rotaFugaAtiva = null;
+
+        const atualizarFilaPrioridade = () => {
+          const lista = alvosInvestigativos
+            .map((alvo) => {
+              const prox = encontrarAgenteMaisProximo(alvo.coordenadas);
+              return { alvo, prox, score: prox.distanciaKm };
+            })
+            .sort((a, b) => a.score - b.score);
+
+          listaPrioridadeIa.innerHTML = lista
+            .map(
+              (item, idx) => `
+            <div class="item-prioridade">
+              <span><strong>${idx + 1}.</strong> ${item.alvo.nome} (${item.alvo.id})</span>
+              <span style="color:var(--azul);">${item.prox.unidade.id} (${item.prox.distanciaKm.toFixed(1)}km)</span>
+            </div>
+          `,
+            )
+            .join("");
+        };
+
+        const calcularRotaFuga = (alvo) => {
+          const destino = rodoviasSaida[alvo.id.length % rodoviasSaida.length];
+          const origem = turf.point(alvo.coordenadas);
+          const rumo = turf.bearing(origem, turf.point(destino));
+          const distanciaDireta = turf.distance(origem, turf.point(destino), {
+            units: "kilometers",
+          });
+          const pontoIntermediario = turf.destination(
+            origem,
+            Math.max(0.25, distanciaDireta * 0.46),
+            rumo + 8,
+            { units: "kilometers" },
+          );
+          const rota = turf.lineString([
+            alvo.coordenadas,
+            pontoIntermediario.geometry.coordinates,
+            destino,
+          ]);
+          const distanciaKm = turf.length(rota, { units: "kilometers" });
+          return {
+            rota,
+            distanciaKm,
+            tempoInterceptacao: `${Math.max(3, Math.ceil((distanciaKm / 45) * 60))} min`,
+          };
+        };
+
+        const exibirRotaFuga = (alvo, dadosRota) => {
+          rotaFugaAtiva = dadosRota;
+          if (mapa.getSource("rota-fuga")) {
+            mapa.getSource("rota-fuga").setData(dadosRota.rota);
+          } else {
+            mapa.addSource("rota-fuga", {
+              type: "geojson",
+              data: dadosRota.rota,
+            });
+            mapa.addLayer({
+              id: "rota-fuga",
+              type: "line",
+              source: "rota-fuga",
+              paint: {
+                "line-color": "#ff3333",
+                "line-width": 3,
+                "line-dasharray": [0.7, 1.2],
+              },
+            });
+          }
+        };
+
+        const iniciarGrampoComunicacao = (alvo, subterminal) => {
+          if (subterminal.dataset.ativo === "true") return;
+          subterminal.dataset.ativo = "true";
+          subterminal.hidden = false;
+          subterminal.innerHTML = `<p class="linha-grampo hex">HEX // INTERCEPTANDO FREQUÊNCIA...</p>`;
+          setTimeout(() => {
+            subterminal.innerHTML += `<p class="linha-grampo texto">ÁUDIO: "${alvo.conversas[0]}"</p>`;
+            subterminal.dataset.ativo = "false";
+          }, 800);
+        };
+
+        const renderizarDossieLateral = (alvo, dadosRota) => {
+          ultimoAlvoSelecionado = alvo;
+          const [longitude, latitude] = alvo.coordenadas;
+          const infoProximidade = encontrarAgenteMaisProximo(alvo.coordenadas);
+
+          painelLateral.className = "painel-lateral";
+          tituloPainelLateral.textContent = `DOSSIÊ // ${alvo.id}`;
+          conteudoPainelLateral.innerHTML = `
+            <header class="dossie-cabecalho">
+              <img class="dossie-foto" src="https://randomuser.me/api/portraits/men/${Math.floor(Math.random() * 90)}.jpg" alt="Retrato">
+              <div>
+                <p class="dossie-kicker">ALVO FEDERAL OSINT</p>
+                <h2 class="dossie-nome">${alvo.nome}</h2>
+                <span class="dossie-status">${alvo.status}</span>
+              </div>
+            </header>
+            <div class="dossie-dados">
+              <p><strong>IDADE:</strong> ${alvo.idade} | <strong>CPF:</strong> ${alvo.cpf}</p>
+              <p><strong>ENDEREÇO:</strong> ${alvo.endereco}</p>
+              <p><strong>INFRAÇÃO:</strong> ${alvo.infracao}</p>
+              <div class="alerta-ameaca ${alvo.periculosidade.includes("ALTO") ? "" : "moderado"}">⚠️ ${alvo.periculosidade}</div>
+              <div class="chat-interceptado"><span style="color:var(--amarelo);">📡 Interceptação:</span> "${alvo.conversas[0]}"</div>
+              <p style="margin-top:8px;"><strong>AGENTE PRÓXIMO:</strong> <span style="color:var(--azul);">${infoProximidade.unidade.nome}</span> (${infoProximidade.distanciaKm.toFixed(2)} km)</p>
+            </div>
+            <div class="mini-radar-container">
+              <div class="mini-radar-titulo"><span>🛰 SATÉLITE AO VIVO</span><span>ZOOM 17.5X</span></div>
+              <div id="mini-mapa-satelite" class="mini-mapa-canvas"></div>
+            </div>
+            <section class="dossie-secao">
+              <span class="dossie-secao-titulo">🔗 Vínculo Criminal</span>
+              <p class="dossie-dados" style="color:#ffcc00;">${alvo.vinculo}</p>
+            </section>
+            <section class="dossie-secao">
+              <span class="dossie-secao-titulo">🚗 Veículos (DENATRAN / ALPR)</span>
+              <ul class="dossie-lista">${alvo.veiculos.map((v) => `<li><strong>${v.placa}</strong> -${v.modelo} <em style="color:var(--vermelho);">[${v.status}]</em></li>`).join("")}</ul>
+            </section>
+            <div class="dossie-acoes">
+              <button class="botao-padrao" id="btn-grampo-lateral" type="button" style="width:100%;">⚡ GRAMPEAR COMUNICAÇÃO</button>
+              <div class="subterminal-grampo" id="subterm-lateral" hidden></div>
+            </div>`;
+
+          painelLateral.hidden = false;
+
+          setTimeout(() => {
+            const miniMapa = new mapboxgl.Map({
+              container: "mini-mapa-satelite",
+              style: "mapbox://styles/mapbox/satellite-v9",
+              center: [longitude, latitude],
+              zoom: 16.5,
+              interactive: false,
+            });
+            new mapboxgl.Marker({ color: "#ff3333" })
+              .setLngLat([longitude, latitude])
+              .addTo(miniMapa);
+          }, 100);
+
+          document
+            .getElementById("btn-grampo-lateral")
+            .addEventListener("click", () => {
+              iniciarGrampoComunicacao(
+                alvo,
+                document.getElementById("subterm-lateral"),
+              );
+            });
+        };
+
+        const renderizarPainelPolicial = (unidade) => {
+          painelLateral.className = "painel-lateral policial";
+          tituloPainelLateral.textContent = `COMUNICAÇÃO // ${unidade.id}`;
+          conteudoPainelLateral.innerHTML = `
+            <div class="chat-policial-container">
+              <div class="dossie-dados" style="margin:0;">
+                <p><strong>UNIDADE:</strong> ${unidade.nome}</p>
+                <p><strong>STATUS:</strong> <span style="color:var(--azul);">${unidade.status}</span></p>
+              </div>
+              <div style="display:flex; gap:6px;">
+                <button id="btn-ativar-emboscada" class="botao-padrao botao-azul" type="button" style="flex:1; font-size:0.6rem;">📍 MONTAR EMBOSCADA</button>
+              </div>
+              <span class="dossie-secao-titulo">Canal de Rádio</span>
+              <div id="historico-chat" class="historico-chat">${unidade.chat.map((m) => `<div class="msg-chat"><strong>[${m.remetente}]:</strong>${m.texto}</div>`).join("")}</div>
+              <div class="chat-input-area">
+                <input type="text" id="input-msg-chat" placeholder="Enviar ordem..." autocomplete="off">
+                <button id="btn-enviar-msg" class="botao-padrao botao-azul" type="button">Enviar</button>
+              </div>
+            </div>`;
+          painelLateral.hidden = false;
+
+          document
+            .getElementById("btn-enviar-msg")
+            .addEventListener("click", () => {
+              const txt = document
+                .getElementById("input-msg-chat")
+                .value.trim();
+              if (!txt) return;
+              unidade.chat.push({ remetente: "Central", texto: txt });
+              renderizarPainelPolicial(unidade);
+            });
+
+          document
+            .getElementById("btn-ativar-emboscada")
+            .addEventListener("click", () => {
+              unidadeEmModoEmboscada = unidade;
+              painelLateral.hidden = true;
+              bannerEmboscada.hidden = false;
+            });
+        };
+
+        const criarMarcadores = (alvo, targetMap) => {
+          const el = document.createElement("div");
+          el.className = "marcador-alvo";
+          el.addEventListener("click", () => {
+            mapa.flyTo({ center: alvo.coordenadas, zoom: 16.5 });
+            exibirRotaFuga(alvo, calcularRotaFuga(alvo));
+            renderizarDossieLateral(alvo, calcularRotaFuga(alvo));
+          });
+          new mapboxgl.Marker({ element: el })
+            .setLngLat(alvo.coordenadas)
+            .addTo(targetMap);
+        };
+
+        const atualizarMarcadoresPoliciais = () => {
+          marcadoresPoliciaisNoMapa.forEach((m) => m.remove());
+          marcadoresPoliciaisNoMapa = [];
+          unidadesPoliciais.forEach((u) => {
+            const el = document.createElement("div");
+            el.className = "marcador-policia";
+            el.innerHTML = `🛡️`;
+            el.addEventListener("click", () => renderizarPainelPolicial(u));
+            marcadoresPoliciaisNoMapa.push(
+              new mapboxgl.Marker({ element: el })
+                .setLngLat(u.coordenadas)
+                .addTo(mapa),
+            );
+            marcadoresPoliciaisNoMapa.push(
+              new mapboxgl.Marker({ element: el.cloneNode(true) })
+                .setLngLat(u.coordenadas)
+                .addTo(mapaGodsEye),
+            );
+          });
+        };
+
+        alvosInvestigativos.forEach((a) => {
+          criarMarcadores(a, mapa);
+          criarMarcadores(a, mapaGodsEye);
+        });
+        atualizarMarcadoresPoliciais();
+        atualizarFilaPrioridade();
+
+        const adicionarLogHTML = (msg) => {
+          terminalLogs.innerHTML += `<div><span class="hora-log">[${new Date().toLocaleTimeString("pt-BR")}]</span> ${msg}</div>`;
+          terminalLogs.scrollTop = terminalLogs.scrollHeight;
+        };
+
+        window.setInterval(() => {
+          adicionarLogHTML(
+            `<span class="linha-log">Varredura ALPR ativa: Frotas sob vigilância em Guanambi.</span>`,
+          );
+        }, 5000);
+      }
+    </script>
+  </body>
+</html>
